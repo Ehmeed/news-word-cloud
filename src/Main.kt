@@ -14,6 +14,9 @@ fun loadData(): List<Pair<String, List<String>>> {
     sites.add(Pair("https://cz.sputniknews.com/", listOf("a")))
     sites.add(Pair("https://www.aktualne.cz", listOf("a")))
     sites.add(Pair("http://www.blesk.cz/zpravy", listOf("a")))
+    sites.add(Pair("https://www.idnes.cz/", listOf("a")))
+    sites.add(Pair("https://www.seznamzpravy.cz/", listOf("a")))
+    sites.add(Pair("https://www.lidovky.cz/", listOf("a")))
     //TODO
     return sites
 }
@@ -45,10 +48,14 @@ fun getHeadlinesBySelector(site: String, selector: String): List<String> {
                 .filter { !it.contains("#") }
                 .filter { !it.contains("?") }
                 .filter { !it.contains("%") }
+                .filter { !it.contains(".") }
                 .filter { !it.contains("novinky", true) }
+                .filter { !it.contains("forum", true) }
                 .filter { !it.contains("sez", true) }
                 .filter { !it.contains("aktualne", true) }
-                .filter { !it.matches("-?\\d+(\\.\\d+)?".toRegex()) }
+                .filter { !it.contains("idnes", true) }
+                .filter { !it.contains("lidovky", true) }
+                .filter { !it.matches(".*\\d+.*".toRegex()) }
                 .map { it.toLowerCase() }
                 .map { if(it.contains(".html")) it.substringBefore(".html") else it }
         )
@@ -59,6 +66,10 @@ fun getHeadlinesBySelector(site: String, selector: String): List<String> {
 private fun String.parseHeadlineFromUrl(): String  {
     if(this.contains("aktualne")){
         return this.substringBeforeLast("/").substringBeforeLast("/").substringAfterLast("/")
+    }else if(this.contains("idnes")){
+        return this.substringBeforeLast("/").substringAfterLast("/")
+    }else if(this.contains("lidovky")){
+        return this.substringBeforeLast("/").substringAfterLast("/")
     }else if(this.substringAfterLast("/").isEmpty()
             && this.isNotEmpty()
             && this.contains("-")
@@ -84,4 +95,14 @@ fun main(args: Array<String>){
     }
 
     siteWordMap.forEach(::println)
+    println("-------------SUMMARY---------------")
+    val summary: MutableMap<String, Int> = mutableMapOf()
+    for(siteValues in siteWordMap){
+        for(wordList in siteValues.second){
+            summary[wordList.key] = summary.getOrDefault(wordList.key, 0) + wordList.value
+        }
+    }
+    summary.toList().sortedBy { (_, v) -> -v }
+            .toMap()
+            .forEach { print(it.toString() + ",") }
 }
