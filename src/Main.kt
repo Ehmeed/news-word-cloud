@@ -11,7 +11,9 @@ fun loadData(): List<Pair<String, List<String>>> {
     sites.add(Pair("https://www.novinky.cz/", listOf("a")))
     sites.add(Pair("https://www.parlamentnilisty.cz/", listOf("a")))
     sites.add(Pair("http://forum24.cz/", listOf("a")))
-
+    sites.add(Pair("https://cz.sputniknews.com/", listOf("a")))
+    sites.add(Pair("https://www.aktualne.cz", listOf("a")))
+    sites.add(Pair("http://www.blesk.cz/zpravy", listOf("a")))
     //TODO
     return sites
 }
@@ -34,7 +36,7 @@ fun getHeadlinesBySelector(site: String, selector: String): List<String> {
     val doc = Jsoup.connect(site).get()
     val newsHeadlines = doc.select(selector)
     for (headline in newsHeadlines) {
-        words.addAll(headline.absUrl("href").substringAfterLast("/")
+        words.addAll(headline.absUrl("href").parseHeadlineFromUrl()
                 .split("-")
                 .filter { it.isNotEmpty()}
                 .filter { it.length > 2 }
@@ -45,6 +47,7 @@ fun getHeadlinesBySelector(site: String, selector: String): List<String> {
                 .filter { !it.contains("%") }
                 .filter { !it.contains("novinky", true) }
                 .filter { !it.contains("sez", true) }
+                .filter { !it.contains("aktualne", true) }
                 .filter { !it.matches("-?\\d+(\\.\\d+)?".toRegex()) }
                 .map { it.toLowerCase() }
                 .map { if(it.contains(".html")) it.substringBefore(".html") else it }
@@ -53,6 +56,18 @@ fun getHeadlinesBySelector(site: String, selector: String): List<String> {
     return words
 }
 
+private fun String.parseHeadlineFromUrl(): String  {
+    if(this.contains("aktualne")){
+        return this.substringBeforeLast("/").substringBeforeLast("/").substringAfterLast("/")
+    }else if(this.substringAfterLast("/").isEmpty()
+            && this.isNotEmpty()
+            && this.contains("-")
+            && !this.contains("novinky")){
+        return this.substring(0, this.length - 1).substringAfterLast("/")
+    }
+    return this.substringAfterLast("/")
+
+}
 
 fun main(args: Array<String>){
     val sites = loadData()
