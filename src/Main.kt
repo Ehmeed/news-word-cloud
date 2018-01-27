@@ -16,14 +16,17 @@ fun loadData(): List<Pair<String, List<String>>> {
     return sites
 }
 
-fun processData(sites: List<Pair<String, List<String>>>) : MutableList<String>{
+fun processData(sites: List<Pair<String, List<String>>>) : MutableList<Pair<String, List<String>>> {
     val words = mutableListOf<String>()
+    val wordsListBySite = mutableListOf<Pair<String, List<String>>>()
     for(site in sites){
         for(selector in site.second) {
             words.addAll(getHeadlinesBySelector(site.first, selector))
         }
+        wordsListBySite.add(Pair(site.first, words.toMutableList()))
+        words.removeAll(words)
     }
-    return words
+    return wordsListBySite
 }
 
 fun getHeadlinesBySelector(site: String, selector: String): List<String> {
@@ -39,8 +42,11 @@ fun getHeadlinesBySelector(site: String, selector: String): List<String> {
                 .filter { !it.contains("mailto") }
                 .filter { !it.contains("#") }
                 .filter { !it.contains("?") }
+                .filter { !it.contains("%") }
                 .filter { !it.contains("novinky", true) }
+                .filter { !it.contains("sez", true) }
                 .filter { !it.matches("-?\\d+(\\.\\d+)?".toRegex()) }
+                .map { it.toLowerCase() }
                 .map { if(it.contains(".html")) it.substringBefore(".html") else it }
         )
     }
@@ -51,11 +57,16 @@ fun getHeadlinesBySelector(site: String, selector: String): List<String> {
 fun main(args: Array<String>){
     val sites = loadData()
     println("Processing..")
-    val words = processData(sites)
-    val occurrenceMap: Map<String, Int> = words.groupingBy { it }
-            .eachCount()
-            .toList()
-            .sortedBy { (_, value) -> value }
-            .toMap()
-    occurrenceMap.forEach(::println)
+    val wordsBySite: MutableList<Pair<String, List<String>>> = processData(sites)
+    val siteWordMap = mutableListOf<Pair<String, Map<String, Int>>>()
+    for(wordList in wordsBySite){
+        val occurrenceMap: Map<String, Int> = wordList.second.groupingBy { it }
+                .eachCount()
+                .toList()
+                .sortedBy { (_, value) -> -value }
+                .toMap()
+        siteWordMap.add(Pair(wordList.first, occurrenceMap))
+    }
+
+    siteWordMap.forEach(::println)
 }
