@@ -15,7 +15,7 @@ fun loadData(): List<Pair<String, List<String>>> {
     sites.add(Pair("https://www.aktualne.cz", listOf("a")))
     sites.add(Pair("http://www.blesk.cz/zpravy", listOf("a")))
     sites.add(Pair("https://www.idnes.cz/", listOf("a")))
-    sites.add(Pair("https://www.seznamzpravy.cz/", listOf("a")))
+    //sites.add(Pair("https://www.seznamzpravy.cz/", listOf("a")))
     sites.add(Pair("https://www.lidovky.cz/", listOf("a")))
     //TODO
     return sites
@@ -79,11 +79,7 @@ private fun String.parseHeadlineFromUrl(): String  {
     return this.substringAfterLast("/")
 
 }
-
-fun main(args: Array<String>){
-    val sites = loadData()
-    println("Processing..")
-    val wordsBySite: MutableList<Pair<String, List<String>>> = processData(sites)
+fun createSiteWordMap(wordsBySite: MutableList<Pair<String, List<String>>>) : MutableList<Pair<String, Map<String, Int>>> {
     val siteWordMap = mutableListOf<Pair<String, Map<String, Int>>>()
     for(wordList in wordsBySite){
         val occurrenceMap: Map<String, Int> = wordList.second.groupingBy { it }
@@ -93,16 +89,29 @@ fun main(args: Array<String>){
                 .toMap()
         siteWordMap.add(Pair(wordList.first, occurrenceMap))
     }
+    return siteWordMap
+}
 
-    siteWordMap.forEach(::println)
-    println("-------------SUMMARY---------------")
+fun createSummary(siteWordMap: MutableList<Pair<String, Map<String, Int>>>) : Map<String, Int> {
     val summary: MutableMap<String, Int> = mutableMapOf()
     for(siteValues in siteWordMap){
         for(wordList in siteValues.second){
             summary[wordList.key] = summary.getOrDefault(wordList.key, 0) + wordList.value
         }
     }
-    summary.toList().sortedBy { (_, v) -> -v }
+    return summary.toList().sortedBy { (_, v) -> -v }
             .toMap()
-            .forEach { print(it.toString() + ",") }
+
+}
+
+fun main(args: Array<String>){
+    val sites = loadData()
+    println("Processing..")
+    val wordsBySite: MutableList<Pair<String, List<String>>> = processData(sites)
+    val siteWordMap = createSiteWordMap(wordsBySite)
+
+    siteWordMap.forEach(::println)
+    println("-------------SUMMARY---------------")
+    val summary: Map<String, Int> = createSummary(siteWordMap)
+    summary.forEach { print(it.toString() + ",") }
 }
